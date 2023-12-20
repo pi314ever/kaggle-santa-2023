@@ -9,6 +9,8 @@ packages = [{include = "kaggle_santa_2023_polytope"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 pandas = "^2.1.4"
+matplotlib = "^3.8.2"
+torch = "^2.1.2"
 
 
 [build-system]
