@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "kaggle-santa-2023-polytope"
+version = "0.1.0"
+description = ""
+authors = ["pi314ever <pilotflyer824@gmail.com>"]
+readme = "README.md"
+packages = [{include = "kaggle_santa_2023_polytope"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.1.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
