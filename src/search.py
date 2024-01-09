@@ -1,6 +1,6 @@
 from heapq import heappush, heappop
 
-from utils import PuzzleOld, PUZZLE_DF, apply_move, submit_solution, ROOT_DIR
+from utils import PuzzleOld, PUZZLE_DF, apply_move
 from utils.submission import Submission
 import multiprocessing as mp
 from tqdm import tqdm
@@ -60,13 +60,7 @@ def failsafe_search(
         return None
 
 
-def imap_search(args):
-    return failsafe_search(*args)
-
-
 def main():
-    max_steps = 5000
-    SKIP_SEEN = False
     with Submission() as s, mp.Pool(mp.cpu_count() - 1) as p:
         inputs = []
         ids = []
@@ -80,31 +74,37 @@ def main():
                 "wreath_12/12",
             ]:
                 continue
+            id = row["id"]
             initial_state = tuple(row["initial_state"])
             solution_state = tuple(row["solution_state"])
             puzzle = PuzzleOld(puzzle_type, solution_state)
             wildcards = row["num_wildcards"]
-            if s.has_solution(row["id"]):
-                if SKIP_SEEN:
-                    print(f"Skipping puzzle {i} ({puzzle_type})")
-                    continue
             # Add puzzles to queue
-            print(f"Adding puzzle {i} ({puzzle_type})")
+            # print(f"Adding puzzle {i} ({puzzle_type})")
             inputs.append(
-                (puzzle, initial_state, heuristic, wildcards, max_steps, False)
+                (
+                    puzzle,
+                    initial_state,
+                    heuristic,
+                    wildcards,
+                    len(s.get_solution(id)),
+                    False,
+                )
             )
-            ids.append(row["id"])
+            ids.append(id)
         print("Solving puzzles...")
         results = list(
             tqdm(
-                p.imap_unordered(imap_search, inputs),
+                p.imap(lambda x: failsafe_search(*x), inputs),
                 total=len(inputs),
             )
         )
         print("Submitting puzzles...")
         for id, result in zip(ids, results):
+            if id == 2:
+                print(id, result)
             if result is not None:
-                print(f"Submitting puzzle {id}")
+                # print(f"Submitting puzzle {id}")
                 s.update(id, result)
 
 

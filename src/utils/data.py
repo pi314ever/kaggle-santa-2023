@@ -46,3 +46,31 @@ def get_solution_states(puzzle_type):
 # PUZZLE_INFO_DF["solution_states"] = PUZZLE_INFO_DF["puzzle_type"].apply(
 #     lambda x: get_solution_states(x)
 # )
+
+
+# Wrapper around the puzzle database to make it easier to use
+class PuzzleDB:
+    def __init__(self) -> None:
+        self.puzzle_df = PUZZLE_DF
+        self.puzzle_info_df = PUZZLE_INFO_DF
+
+    def allowed_moves(self, puzzle_type: str) -> dict:
+        """Returns a dict of label -> move permutations for a particular puzzle type"""
+        return self.puzzle_info_df[self.puzzle_info_df["puzzle_type"] == puzzle_type][
+            "allowed_moves"
+        ].iloc[0]
+
+    def iter_puzzles(self, filter=None):
+        if filter is None:
+            return self.puzzle_df.iterrows()
+        else:
+            return self.puzzle_df[filter].iterrows()
+
+    def get_puzzle_by_type(self, puzzle_type: str):
+        return self.puzzle_df[self.puzzle_df["puzzle_type"] == puzzle_type]
+
+    def get_puzzle_by_id(self, id: int):
+        return self.puzzle_df[self.puzzle_df["id"] == id]
+
+
+PUZZLE_DB = PuzzleDB()

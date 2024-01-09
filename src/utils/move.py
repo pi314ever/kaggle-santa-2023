@@ -19,3 +19,22 @@ def apply_move_tensor(state, move, inverse=False):
         return state[inverse_move(move), :]
     else:
         return state[move, :]
+
+
+def is_valid_solution(id: int, moves: list[str]):
+    from .data import PUZZLE_DF, PUZZLE_INFO_DF
+
+    """Check if a solution is valid."""
+    puzzle_type = PUZZLE_DF.loc[id]["puzzle_type"]
+    solution_state = PUZZLE_DF.loc[id]["solution_state"]
+    state = PUZZLE_DF.loc[id]["initial_state"]
+    wildcards = PUZZLE_DF.loc[id]["num_wildcards"]
+    allowed_moves = PUZZLE_INFO_DF[PUZZLE_INFO_DF["puzzle_type"] == puzzle_type].iloc[
+        0
+    ]["allowed_moves"]
+
+    for move in moves:
+        state = apply_move(state, allowed_moves[move])
+    return (
+        sum(int(state[i] != solution_state[i]) for i in range(len(state))) <= wildcards
+    )
