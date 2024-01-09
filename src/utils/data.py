@@ -6,6 +6,7 @@ from .move import inverse_move
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 DATA_DIR = ROOT_DIR / "data"
+MODEL_DIR = ROOT_DIR / "models"
 PUZZLE_INFO_DF = pd.read_csv(DATA_DIR / "puzzle_info.csv")
 PUZZLE_DF = pd.read_csv(DATA_DIR / "puzzles.csv")
 
@@ -36,3 +37,12 @@ for puzzle in PUZZLE_INFO_DF["puzzle_type"]:
 PUZZLE_INFO_DF["allowed_moves"] = PUZZLE_INFO_DF["puzzle_type"].apply(
     lambda x: new_allowed_moves[x]
 )
+
+
+def get_solution_states(puzzle_type):
+    return set(PUZZLE_DF[PUZZLE_DF["puzzle_type"] == puzzle_type]["solution_state"])
+
+
+# PUZZLE_INFO_DF["solution_states"] = PUZZLE_INFO_DF["puzzle_type"].apply(
+#     lambda x: get_solution_states(x)
+# )
