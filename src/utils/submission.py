@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import re
 
 from .data import DATA_DIR
 from .move import is_valid_solution
@@ -42,15 +43,14 @@ class Submission:
         solution_method: str,
         check_valid_solution=True,
     ) -> tuple[bool, str]:
+        if check_valid_solution and not is_valid_solution(id, moves):
+            return False, "Invalid solution"
         if id in self.submission_df.index and len(moves) >= len(
             self.submission_df.loc[id]["moves"].split(".")
         ):
-            if len(moves) == len(self.submission_df.loc[id]["moves"].split(".")):
-                self._add_solution_method(id, solution_method, len(moves))
+            self._add_solution_method(id, solution_method, len(moves))
 
             return False, "Better solution already exists"
-        if check_valid_solution and not is_valid_solution(id, moves):
-            return False, "Invalid solution"
 
         self.submission_df.loc[id, "id"] = int(id)
         self.submission_df.loc[id, "moves"] = ".".join(moves)
@@ -64,9 +64,21 @@ class Submission:
         if str(self.meta_data.loc[id]["methods"]) == "nan":
             self.meta_data.loc[id, "methods"] = entry
         else:
-            self.meta_data.loc[id, "methods"] = ".".join(
-                set(self.meta_data.loc[id]["methods"].split(".") + [entry])
-            )
+            previous_methods = self.meta_data.loc[id]["methods"].split(".")
+            matches = [re.match(r"(.*)\(([0-9]+)\)", m) for m in previous_methods]
+            lengths = [int(m.group(2)) for m in matches]  # type: ignore
+            methods = [m.group(1) for m in matches]  # type: ignore
+            # Insert new method
+            to_set = []
+            for m, l in zip(methods, lengths):
+                if method == m:
+                    to_set.append(m + f"({min(l, solution_length)})")
+                    if solution_length < l:
+                        # Need to re-sort
+                        to_set = sorted(to_set, key=lambda x: int(x.split("(")[1][:-1]))
+                    continue
+                to_set.append(m + f"({l})")
+            self.meta_data.loc[id, "methods"] = ".".join(to_set)
 
     def has_solution(self, id: int):
         return id in self.submission_df.index
