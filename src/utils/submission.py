@@ -9,12 +9,21 @@ SUBMISSION_FILE = DATA_DIR / "submission.csv"
 
 class Submission:
     def __init__(self, file: Path = SUBMISSION_FILE) -> None:
+        assert file.name.endswith(".csv"), "File must be a .csv file"
+
         self.file = file
+        self.meta_file = file.parent / file.name.replace(".csv", "_meta.csv")
         if self.file.exists():
             self.submission_df = pd.read_csv(self.file)
         else:
             self.submission_df = pd.DataFrame({"id": [], "moves": []})
         self.submission_df.astype({"id": int, "moves": str})
+
+        if self.meta_file.exists():
+            self.meta_data = pd.read_csv(self.meta_file)
+        else:
+            self.meta_data = pd.DataFrame({"id": [], "methods": []})
+        self.meta_data.astype({"id": int, "methods": str})
 
     def __enter__(self):
         return self
@@ -24,30 +33,43 @@ class Submission:
 
     def submit(self):
         self.submission_df.to_csv(self.file, index=False)
+        self.meta_data.to_csv(self.meta_file, index=False)
 
-    def update(self, id: int, moves: list[str], check_valid_solution=True):
+    def update(
+        self,
+        id: int,
+        moves: list[str],
+        solution_method: str,
+        check_valid_solution=True,
+    ) -> tuple[bool, str]:
         if id in self.submission_df.index and len(moves) >= len(
             self.submission_df.loc[id]["moves"].split(".")
         ):
-            # Better solution already exists
-            return
+            if len(moves) == len(self.submission_df.loc[id]["moves"].split(".")):
+                self._add_solution_method(id, solution_method, len(moves))
+
+            return False, "Better solution already exists"
         if check_valid_solution and not is_valid_solution(id, moves):
-            print(f"Invalid solution for id {id}")
-            return
+            return False, "Invalid solution"
 
         self.submission_df.loc[id, "id"] = int(id)
         self.submission_df.loc[id, "moves"] = ".".join(moves)
+        self._add_solution_method(id, solution_method, len(moves))
+
+        return True, ""
+
+    def _add_solution_method(self, id: int, method: str, solution_length: int):
+        entry = f"{method}({solution_length})"
+        self.meta_data.loc[id, "id"] = int(id)
+        if str(self.meta_data.loc[id]["methods"]) == "nan":
+            self.meta_data.loc[id, "methods"] = entry
+        else:
+            self.meta_data.loc[id, "methods"] = ".".join(
+                set(self.meta_data.loc[id]["methods"].split(".") + [entry])
+            )
 
     def has_solution(self, id: int):
         return id in self.submission_df.index
 
     def get_solution(self, id: int):
         return self.submission_df.loc[id]["moves"].split(".")
-
-
-if __name__ == "__main__":
-    with Submission() as s:
-        s.update(0, ["F", "B", "U"])
-        s.update(1, ["F", "B", "U"])
-        s.update(2, ["F", "B", "U"])
-        print(s.submission_df.head())
