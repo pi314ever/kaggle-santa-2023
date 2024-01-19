@@ -6,6 +6,7 @@ from .move import inverse_move
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 DATA_DIR = ROOT_DIR / "data"
+SRC_DIR = ROOT_DIR / "src"
 MODEL_DIR = ROOT_DIR / "models"
 PUZZLE_INFO_DF = pd.read_csv(DATA_DIR / "puzzle_info.csv")
 PUZZLE_DF = pd.read_csv(DATA_DIR / "puzzles.csv")

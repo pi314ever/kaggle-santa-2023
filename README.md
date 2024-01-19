@@ -23,7 +23,7 @@ Puzzles solved with this approach:
 
 ### Deep Approximate Value Iteration
 
-A [previous approach from UCI](https://github.com/forestagostinelli/DeepCubeA) used a deep neural network to approximate the value function, making it possible to solve much larger puzzles given that the puzzle had a relatively small move space.
+A previous approach from UCI (see [DeepCubeA](https://github.com/forestagostinelli/DeepCubeA)) used a deep neural network to approximate the value function, making it possible to solve much larger puzzles given that the puzzle had a relatively small move space.
 
 All other puzzles were solved with this approach.
 

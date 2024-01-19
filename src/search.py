@@ -1,20 +1,22 @@
 from heapq import heappush, heappop
 
-from utils import PuzzleInstance, PUZZLE_DF, apply_move
+from utils import Puzzle, PUZZLE_DF, apply_move
 from utils.submission import Submission
 import multiprocessing as mp
 from tqdm import tqdm
 
 
-def heuristic(state, solution):
+def dist_heuristic(state, solution, steps):
     """Calculate the heuristic value of a state."""
-    return sum([1 if state[i] != solution[i] else 0 for i in range(len(state))])
+    return sum([1 if state[i] != solution[i] else 0 for i in range(len(state))]) + len(
+        steps
+    )
 
 
 def iddfs_search(
-    puzzle: PuzzleInstance,
+    puzzle: Puzzle,
     initial_state: tuple,
-    heuristic=heuristic,
+    heuristic=dist_heuristic,
     max_steps: int = 40,
     verbose: bool = False,
     **kwargs,
@@ -32,9 +34,9 @@ def iddfs_search(
 
 
 def beam_search(
-    puzzle: PuzzleInstance,
+    puzzle: Puzzle,
     initial_state: tuple,
-    heuristic=heuristic,
+    heuristic=dist_heuristic,
     max_steps: int = 40,
     verbose: bool = False,
     beam_width: int = 500,
@@ -57,9 +59,9 @@ def beam_search(
         if len(steps) > max_steps:
             continue
         for move in puzzle.allowed_moves:
-            new_state = apply_move(state, puzzle.move_from_str(move))
+            new_state = puzzle.move_state(state, move)
             new_steps = [*steps, move]
-            new_cost = heuristic(new_state, puzzle.solution_state) + len(steps)
+            new_cost = heuristic(new_state, puzzle.solution_state, steps)
             if new_state not in seen:
                 heappush(q, (new_cost, new_state, new_steps))
         if len(q) > beam_width:
@@ -69,7 +71,7 @@ def beam_search(
 
 
 def dfs_search(
-    puzzle: PuzzleInstance,
+    puzzle: Puzzle,
     initial_state: tuple,
     heuristic,
     max_steps: int,
@@ -94,11 +96,8 @@ def dfs_search(
             return steps
         # Order search of new state by heuristic
         new_states_and_moves = sorted(
-            [
-                (apply_move(state, puzzle.move_from_str(m)), m)
-                for m in puzzle.allowed_moves
-            ],
-            key=lambda x: heuristic(x[0], puzzle.solution_state),
+            [(puzzle.move_state(state, m), m) for m in puzzle.allowed_moves],
+            key=lambda x: heuristic(x[0], puzzle.solution_state, steps),
         )
         for new_state, m in new_states_and_moves:
             res = visit(new_state, m)
@@ -133,14 +132,14 @@ def main_mp():
             initial_state = tuple(row["initial_state"])
             solution_state = tuple(row["solution_state"])
             wildcards = row["num_wildcards"]
-            puzzle = PuzzleInstance(puzzle_type, solution_state, wildcards)
+            puzzle = Puzzle(puzzle_type, solution_state, wildcards)
             # Add puzzles to queue
             # print(f"Adding puzzle {i} ({puzzle_type})")
             inputs.append(
                 (
                     puzzle,
                     initial_state,
-                    heuristic,
+                    dist_heuristic,
                     len(s.get_solution(id)),
                     False,
                 )
@@ -174,12 +173,12 @@ def main():
             initial_state = tuple(row["initial_state"])
             solution_state = tuple(row["solution_state"])
             wildcards = row["num_wildcards"]
-            puzzle = PuzzleInstance(puzzle_type, solution_state, wildcards)
+            puzzle = Puzzle(puzzle_type, solution_state, wildcards)
             print(f"Solving puzzle {i} ({puzzle_type})")
             result = SEARCH_METHOD(
                 puzzle,
                 initial_state,
-                heuristic,
+                dist_heuristic,
                 len(s.get_solution(id)),
                 verbose=False,
                 beam_width=1000,

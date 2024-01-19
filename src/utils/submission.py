@@ -2,10 +2,27 @@ from pathlib import Path
 import pandas as pd
 import re
 
-from .data import DATA_DIR
-from .move import is_valid_solution
+from .data import DATA_DIR, PUZZLE_DF, PUZZLE_INFO_DF
+from .move import apply_move
 
 SUBMISSION_FILE = DATA_DIR / "submission.csv"
+
+
+def is_valid_solution(id: int, moves: list[str]):
+    """Check if a solution is valid."""
+    puzzle_type = PUZZLE_DF.loc[id]["puzzle_type"]
+    solution_state = PUZZLE_DF.loc[id]["solution_state"]
+    state = PUZZLE_DF.loc[id]["initial_state"]
+    wildcards = PUZZLE_DF.loc[id]["num_wildcards"]
+    allowed_moves = PUZZLE_INFO_DF[PUZZLE_INFO_DF["puzzle_type"] == puzzle_type].iloc[
+        0
+    ]["allowed_moves"]
+
+    for move in moves:
+        state = apply_move(state, allowed_moves[move])
+    return (
+        sum(int(state[i] != solution_state[i]) for i in range(len(state))) <= wildcards
+    )
 
 
 class Submission:
