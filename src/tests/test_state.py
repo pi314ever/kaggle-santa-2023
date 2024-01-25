@@ -9,15 +9,15 @@ def state_adapter():
     return StateAdapter(("a", "b", "c"))
 
 
-def test_state_str_to_tensor(state_adapter):
+def test_state_str_to_tensor(state_adapter: StateAdapter):
     state_str = ("a", "c", "b")
-    expected_tensor = torch.tensor([0, 2, 1], dtype=torch.uint8)
+    expected_tensor = torch.tensor([0, 2, 1], dtype=torch.uint8).unsqueeze(0)
     tensor = state_adapter.state_str_to_tensor(state_str)
     assert torch.equal(tensor, expected_tensor)
-    assert tensor.shape == (3,)
+    assert tensor.shape == (1, 3)
 
 
-def test_state_tensor_to_str(state_adapter):
+def test_state_tensor_to_str(state_adapter: StateAdapter):
     tensor = torch.tensor([0, 2, 1], dtype=torch.uint8)
     expected_state_str = ("a", "c", "b")
     state_str = state_adapter.state_tensor_to_str(tensor)

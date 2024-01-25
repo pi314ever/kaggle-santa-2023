@@ -90,3 +90,9 @@ class Puzzle:
         for move in moves:
             state = self.move_state(state, move)
         return self.is_solved(state)
+
+    def heuristic(self, state: STATE_TYPE, moves: list[str]):
+        """Heuristic for the puzzle."""
+        return len(moves) + sum(
+            int(s != ss) for s, ss in zip(state, self.solution_state)
+        )

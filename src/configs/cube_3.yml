@@ -1,0 +1,16 @@
+puzzle_type: "cube_3/3/3"
+model: "resnet"
+model_args:
+  state_dim: 54
+  one_hot_depth: 6
+  h1_dim: 512
+  resnet_dim: 512
+  num_resnet_blocks: 5
+  out_dim: 1
+  batch_norm: true
+train_args:
+  num_epochs: 10000
+  batch_size: 128
+  learning_rate: 0.001
+  num_steps: 30
+  save_increment: 10

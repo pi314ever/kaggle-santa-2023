@@ -1,12 +1,12 @@
 import random
+
 import torch
-import torch.nn as nn
 from torch import Tensor
 
 from utils.typing import STATE_TYPE
 
-from .puzzle import Puzzle
 from .move import apply_move_tensor
+from .puzzle import Puzzle
 from .state import StateAdapter
 
 
@@ -34,12 +34,25 @@ class PuzzlePyTorch(Puzzle):
     def solution_state_tensor(self):
         return self._solution_state_tensor
 
-    def is_solved(self, state: Tensor):
+    def set_device(self, device: torch.device):
+        self._solution_state_tensor = self._solution_state_tensor.to(device)
+
+    def is_solved_tensor(self, state: Tensor):
         return torch.sum(state == self.solution_state_tensor, dim=1) <= self.wildcards
 
-    def move_state(self, state: Tensor, move_str):
+    def move_state_tensor(self, state: Tensor, move_str):
         return apply_move_tensor(state, self.moves.move_from_str(move_str))
 
-    def random_walk(self, states: Tensor, num_steps: int) -> Tensor:
+    def random_walk_tensor(self, states: Tensor, num_steps: int):
         """Tensors of shape (n, b) where n is length of puzzle and b is batch size."""
-        raise NotImplementedError
+        assert states.ndim == 2, f"States must be 2-dimensional. Got {states.ndim}"
+        step = 0
+        while step < num_steps:
+            shuffled_moves = self.random.sample(self.allowed_moves, len(self.allowed_moves))
+            shuffled_groups = self.random.sample(range(states.shape[0]), states.shape[0])
+            for i, move in enumerate(shuffled_moves):
+                subset = shuffled_groups[i * states.shape[0] // len(shuffled_moves) : (i + 1) * states.shape[0] // len(shuffled_moves)]
+                states[subset, :] = self.move_state_tensor(states[subset, :], move)
+            step += 1
+            
+            yield states, zip(shuffled_moves, shuffled_groups)
