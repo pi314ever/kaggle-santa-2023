@@ -1,5 +1,8 @@
 .vscode/
 data/
+*.pt
+models/
+!src/models/
 *submission.csv
 
 __pycache__/

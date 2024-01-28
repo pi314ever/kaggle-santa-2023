@@ -1,16 +1,16 @@
-puzzle_type: "cube_4/4/4"
+puzzle_type: "cube_5/5/5"
 model: "resnet"
 model_args:
-  state_dim: 96
+  state_dim: 150
   one_hot_depth: 6
   h1_dim: 512
   resnet_dim: 512
-  num_resnet_blocks: 10
+  num_resnet_blocks: 16
   out_dim: 1
   batch_norm: true
 train_args:
-  num_epochs: 10000
-  batch_size: 2048
+  num_epochs: 20000
+  batch_size: 256
   learning_rate: 0.001
-  num_steps: 80
+  num_steps: 100
   save_increment: 1000

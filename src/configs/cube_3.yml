@@ -5,12 +5,12 @@ model_args:
   one_hot_depth: 6
   h1_dim: 512
   resnet_dim: 512
-  num_resnet_blocks: 5
+  num_resnet_blocks: 8
   out_dim: 1
   batch_norm: true
 train_args:
   num_epochs: 10000
-  batch_size: 128
+  batch_size: 2048
   learning_rate: 0.001
   num_steps: 30
-  save_increment: 10
+  save_increment: 1000
