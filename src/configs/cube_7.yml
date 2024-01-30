@@ -1,0 +1,16 @@
+puzzle_type: "cube_7/7/7"
+model: "resnet"
+model_args:
+  state_dim: 294
+  one_hot_depth: 6
+  h1_dim: 512
+  resnet_dim: 512
+  num_resnet_blocks: 20
+  out_dim: 1
+  batch_norm: true
+train_args:
+  num_epochs: 40000
+  batch_size: 64
+  learning_rate: 0.001
+  num_steps: 200
+  save_increment: 1000

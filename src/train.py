@@ -26,9 +26,9 @@ class ModelDirectoryContext:
 
         self.meta_path = model_dir / "meta.yaml"
         self.periodic_model_dir = self.model_dir / "periodic"
-
-        self._latest_model: Optional[nn.Module] = None
-        self._best_model: Optional[nn.Module] = None
+        
+        self._latest_model: nn.Module
+        self._best_model: nn.Module
 
         if not model_dir.exists():
             # New model directory
@@ -43,6 +43,8 @@ class ModelDirectoryContext:
                 "loss_history": [],
             }
             self.set_meta_config(config)
+            self._latest_model = self.load_initial_model()
+            self._best_model = self.load_initial_model()
         else:
             # Existing model directory
             self.meta = yaml.safe_load(open(model_dir / "meta.yaml"))
@@ -71,14 +73,10 @@ class ModelDirectoryContext:
 
     @property
     def latest_model(self) -> nn.Module:
-        if self._latest_model is None:
-            raise ValueError("No latest model loaded")
         return self._latest_model
 
     @property
     def best_model(self) -> nn.Module:
-        if self._best_model is None:
-            raise ValueError("No best model loaded")
         return self._best_model
 
     def set_meta_config(self, config: dict):
@@ -169,7 +167,6 @@ class ModelDirectoryContext:
         self.load_latest_model(model)
         self.load_best_model(model)
 
-
     def update_meta(self, epoch, loss):
         self.meta["last_epoch"] = epoch
         self.meta["last_loss"] = loss
@@ -185,22 +182,16 @@ class ModelDirectoryContext:
         self.update_meta(epoch, loss)
 
     def save(self):
-        if self._latest_model is None:
-            print("Warning: No latest model loaded")
-        if self._best_model is None:
-            print("Warning: No best model loaded")
-        if self._latest_model is None:
-            torch.save(
-                self.latest_model.state_dict(),
-                self.model_dir
-                / f"latest_model_{self.meta['last_epoch']}_{self.meta['last_loss']}.pt",
-            )
-        if self._best_model is not None:
-            torch.save(
-                self.best_model.state_dict(),
-                self.model_dir
-                / f"best_model_{self.meta['best_epoch']}_{self.meta['best_loss']}.pt",
-            )
+        torch.save(
+            self.latest_model.state_dict(),
+            self.model_dir
+            / f"latest_model_{self.meta['last_epoch']}_{self.meta['last_loss']}.pt",
+        )
+        torch.save(
+            self.best_model.state_dict(),
+            self.model_dir
+            / f"best_model_{self.meta['best_epoch']}_{self.meta['best_loss']}.pt",
+        )
         self.save_meta()
 
     def save_meta(self):
@@ -327,9 +318,6 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     args.device = torch.device(args.device)
-
-    if not args.model_dir.exists():
-        args.model_dir.mkdir()
 
     config = yaml.safe_load(open(args.config_file))
     validate_config(config)

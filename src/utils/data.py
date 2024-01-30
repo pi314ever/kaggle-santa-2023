@@ -1,6 +1,7 @@
-import pandas as pd
-from pathlib import Path
 import json
+from pathlib import Path
+
+import pandas as pd
 
 from .move import inverse_move
 
@@ -66,6 +67,13 @@ class PuzzleDB:
             return self.puzzle_df.iterrows()
         else:
             return self.puzzle_df[filter].iterrows()
+
+    def state_choices(self, puzzle_type: str):
+        choices = set()
+        for _, row in self.get_puzzle_by_type(puzzle_type).iterrows():
+            choices.add(tuple(sorted(set(row["initial_state"]))))
+        choices_list = sorted(choices, key=lambda x: len(x))
+        return choices_list
 
     def get_puzzle_by_type(self, puzzle_type: str):
         return self.puzzle_df[self.puzzle_df["puzzle_type"] == puzzle_type]
