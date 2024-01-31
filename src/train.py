@@ -1,14 +1,14 @@
-import re
 from pathlib import Path
-from typing import Optional
 
 import torch
 import torch.nn as nn
 import yaml
+from torch.functional import Tensor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from utils.dataset import PuzzleWalkDataset
+from utils.load_model import load_model
 from utils.model_dir import ModelDirectoryManager
 from utils.puzzle_pytorch import PuzzlePyTorch
 
@@ -26,9 +26,9 @@ class ModelDirectoryContext:
         if model_dir.exists():
             self.model_manager = ModelDirectoryManager(model_dir)
         else:
-            self.model_manager = ModelDirectoryManager.create_from_config(model_dir, config)
-
-
+            self.model_manager = ModelDirectoryManager.create_from_config(
+                model_dir, config
+            )
 
     def __enter__(self):
         return self.model_manager
@@ -39,29 +39,6 @@ class ModelDirectoryContext:
             return False
         self.model_manager.save()
         return True
-
-
-
-def load_model_from_config(config: dict) -> nn.Module:
-    """Loads a model from a config file"""
-    return load_model(config["model"], config["model_args"])
-
-
-def load_model(model_name: str, model_args: dict) -> nn.Module:
-    """Loads a model from a config file"""
-    if model_name == "resnet":
-        from models.resnet import ResnetModel
-
-        model = ResnetModel(**model_args)
-
-    elif model_name == "basic_ff":
-        from models.basic_ff import DNNModel
-
-        model = DNNModel(**model_args)
-    else:
-        raise NotImplementedError(f"Model {model_name} not implemented")
-
-    return model
 
 
 def validate_config(config: dict):
@@ -92,7 +69,7 @@ def validate_config(config: dict):
 def train(
     model: nn.Module,
     dataset: PuzzleWalkDataset,
-    ctx: ModelDirectoryManager,
+    mgr: ModelDirectoryManager,
     start_epoch: int,
     num_epochs: int,
     batch_size: int,
@@ -104,11 +81,14 @@ def train(
     """Train a model on a puzzle instance
 
     @param model: Model to train
-    @param ctx: Model directory context
-    @param puzzle_instance: Puzzle instance to train on
-    @param num_epochs: Number of epochs to train for
+    @param dataset: Dataset to train on
+    @param mgr: Model directory manager to save model to
+    @param start_epoch: Epoch to start training from
+    @param num_epochs: Number of total epochs to train for
     @param batch_size: Batch size
-    @param lr: Learning rate
+    @param save_increment: Number of epochs between saving model periodically
+    @param num_workers: Number of workers to use for data loading
+    @param learning_rate: Learning rate
     @param device: Device to train on
     """
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -134,9 +114,9 @@ def train(
             num_samples += states.shape[0]
         avg_loss = total_loss / num_samples
         tqdm.write(f"Epoch {epoch}: loss {avg_loss}")
-        ctx.update_model(model, epoch, avg_loss)
+        mgr.update_model(model, epoch, avg_loss)
         if epoch % save_increment == 0:
-            ctx.save_model_periodic(model, epoch, avg_loss)
+            mgr.save_model_periodic(model, epoch, avg_loss)
     return model
 
 
@@ -160,7 +140,7 @@ if __name__ == "__main__":
     puzzle_type = config["puzzle_type"]
 
     print(f"Loading config from {args.config_file}: puzzle type {puzzle_type}")
-    model = load_model_from_config(config)
+    model = load_model(config["model"], config["model_args"])
     solution_state = PUZZLE_DB.get_puzzle_by_type(puzzle_type).iloc[0]["solution_state"]
     puzzle_instance = PuzzlePyTorch(puzzle_type, solution_state, 0)
 
@@ -170,6 +150,7 @@ if __name__ == "__main__":
         num_walks=config["train_args"]["batch_size"],
     )
 
+    # Prepare config for keyward expansion in train
     del config["train_args"]["num_steps"]
 
     with ModelDirectoryContext(args.model_dir, config) as manager:
@@ -186,7 +167,7 @@ if __name__ == "__main__":
         try:
             train(
                 model=manager.latest_model,
-                ctx=manager,
+                mgr=manager,
                 dataset=dataset,
                 start_epoch=manager.meta["last_epoch"],
                 num_workers=args.num_workers,

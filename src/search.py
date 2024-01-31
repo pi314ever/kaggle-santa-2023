@@ -6,6 +6,7 @@ from typing import Callable
 from tqdm import tqdm
 
 from utils.data import PUZZLE_DB, PUZZLE_DF, PUZZLE_INFO_DF
+from utils.model_dir import ModelDirectoryManager
 from utils.puzzle import Puzzle
 from utils.puzzle_pytorch import PuzzlePyTorch
 from utils.state import StateAdapter
@@ -189,8 +190,8 @@ if __name__ == "__main__":
         # State adapter might need to be loaded in a different place.
         state_adapter = StateAdapter(PUZZLE_DB.state_choices(args.puzzle)[0])
 
-        ctx = ModelDirectoryContext(args.pytorch_model_dir)
-        model = ctx.latest_model
+        mgr = ModelDirectoryManager(args.pytorch_model_dir)
+        model = mgr.latest_model
         model.train(False)
         model.to(args.device)
 
